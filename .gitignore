@@ -1,0 +1,8 @@
+work/
+.nextflow/
+.nextflow.log*
+*.vcf
+*.DS_STORE
+*.txt
+results/
+*.bam
