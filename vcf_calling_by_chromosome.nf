@@ -37,8 +37,8 @@ process HAPLOTYPE_CALLER {
 
   script:
   	"""
-  echo samtools index ${bam}
-  echo ${params.gatk} HaplotypeCaller --input ${bam} --reference ${params.reference} --output ${bam.baseName}.vcf > ${bam.baseName}.txt
+  samtools index ${bam}
+  ${params.gatk} HaplotypeCaller --input ${bam} --reference ${params.reference} --output ${bam.baseName}.vcf > ${bam.baseName}.txt
   vcftools --vcf ${bam.baseName}.full.vcf --minGQ 15 --minDP 20 > "${bam.baseName}.vcf"
   	"""
 }
