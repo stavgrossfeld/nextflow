@@ -104,33 +104,13 @@ workflow {
 
 	parentdir=file("$params.bam").Parent
 	SPLIT_BAM_TO_CHROMOSOMES("$params.bam")
-//
-// 	knownChromosomes = (1..23).collect{ it.toString() } + ["X", "Y"]
 
 	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
-		.map {it.baseName}
+		.map {it.baseName}.take(3)
 
 
-// 		| map {it.name.lastIndexOf('.')}
-// 		| view()
-// 	    | filter { it.name.split("_") .last() in knownChromosomes }
-//     	| view()
-
-
-
-// 		.out
-//
-// 	split_bam_ch = Channel.fromPath("$parentdir/*REF_*.bam")
-// 						  .map { parentdir.toString()  + '/' + it.baseName }.flatten().take(1)
-
-//
-// // 	split_bam_ch.view()
-	HAPLOTYPE_CALLER(split_bam_ch, parentdir)
-		.collectFile(name:'result.txt', storeDir: params.outdir)
-// 		.view { it.text }
-
-// 	HAPLOTYPE_CALLER(split_bam_ch, parentdir)
+	HAPLOTYPE_CALLER(split_bam_ch, parentdir).collect()
 // 		.collectFile(name:'result.txt', storeDir: params.outdir)
-// 		.view { it.text }
+
 
 }
