@@ -103,9 +103,9 @@ workflow {
 	println "$params"
 
 	parentdir=file("$params.bam").Parent
-// 	SPLIT_BAM_TO_CHROMOSOMES("$params.bam")
-
-	knownChromosomes = (1..23).collect{ it.toString() } + ["X", "Y"]
+	SPLIT_BAM_TO_CHROMOSOMES("$params.bam")
+//
+// 	knownChromosomes = (1..23).collect{ it.toString() } + ["X", "Y"]
 
 	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
 		.map {it.baseName}
