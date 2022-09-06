@@ -18,7 +18,6 @@ process SPLIT_BAM_TO_CHROMOSOMES {
   	path bam
   output:
    	path "*.bam"
-   	stdout emit: verbiage
 
   script:
   """
@@ -42,10 +41,10 @@ process HAPLOTYPE_CALLER {
 
 	# index bam file
 
-    samtools index "${baseDir}/results/bams/${contig_file}.bam"
+    samtools index $contig_file
 
 	# haplotype calling
-    ${params.gatk} HaplotypeCaller --input "${baseDir}/results/bams/${contig_file}.bam" --reference ${params.reference} --output "full.vcf"
+    ${params.gatk} HaplotypeCaller --input $contig_file --reference ${params.reference} --output "full.vcf"
 
 	# select SNP variants
 	${params.gatk} SelectVariants \
@@ -116,14 +115,13 @@ workflow {
 	parentdir=file("$params.bam").Parent
 
 	// split bam into contigs
+	split_bam_ch = SPLIT_BAM_TO_CHROMOSOMES("$params.bam").collect().flatten().take(3)
 
-	SPLIT_BAM_TO_CHROMOSOMES("$params.bam")
-
-	// retreive bam files from results
-	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
-		.map {it.baseName}.take(12)
-
-	// run haplotype caller
+// 	// retreive bam files from results
+// 	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
+// 		.map {it.baseName}.take(12)
+//
+// 	// run haplotype caller
 	split_vcf_ch = HAPLOTYPE_CALLER(split_bam_ch, parentdir)
 				.collect()
 
