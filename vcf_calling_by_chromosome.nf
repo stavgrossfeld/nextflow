@@ -31,7 +31,6 @@ process HAPLOTYPE_CALLER {
 
    input:
    	    val(contig_file)
-   	    val(parentdir)
     output:
     	path "filtered.vcf"
 
@@ -116,16 +115,11 @@ workflow {
 
 	// split bam into contigs
 	split_bam_ch = SPLIT_BAM_TO_CHROMOSOMES("$params.bam").collect().flatten().take(3)
-
-// 	// retreive bam files from results
-// 	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
-// 		.map {it.baseName}.take(12)
-//
-// 	// run haplotype caller
-	split_vcf_ch = HAPLOTYPE_CALLER(split_bam_ch, parentdir)
+	// run haplotype caller
+	split_vcf_ch = HAPLOTYPE_CALLER(split_bam_ch)
 				.collect()
 
-	// gather vcf when using only one file for the header
+	// gather vcf using one of the files for the header
 	header_file = split_vcf_ch.flatten().first()
 	header_file.view()
 	split_vcf_str = split_vcf_ch.map { it -> it.join(" ") }
