@@ -34,7 +34,7 @@ process HAPLOTYPE_CALLER {
    	    val(contig_file)
    	    val(parentdir)
     output:
-    	path "*.vcf"
+    	path "filtered.vcf"
 
   script:
 
@@ -42,10 +42,10 @@ process HAPLOTYPE_CALLER {
 
 	# index bam file
 
-	samtools index "${baseDir}/results/bams/${contig_file}.bam"
+    samtools index "${baseDir}/results/bams/${contig_file}.bam"
 
 	# haplotype calling
-	${params.gatk} HaplotypeCaller --input "${baseDir}/results/bams/${contig_file}.bam" --reference ${params.reference} --output "full.vcf"
+    ${params.gatk} HaplotypeCaller --input "${baseDir}/results/bams/${contig_file}.bam" --reference ${params.reference} --output "full.vcf"
 
 	# select SNP variants
 	${params.gatk} SelectVariants \
@@ -67,13 +67,27 @@ process HAPLOTYPE_CALLER {
         -filter-name "ReadPosRankSum_filter" -filter "ReadPosRankSum < -8.0"
 
 
-
-
 	"""
 }
 
 
+process GATHER_VCF {
+   debug true
+   publishDir "${params.outdir}"
 
+   input:
+   		val(vcfs)
+   		val(header)
+//    	    path '*snp.vcf'
+    output:
+    	path "*.vcf"
+
+	script:
+	"""
+   	grep '##' $header > results.txt
+   	cat $vcfs | grep -v '##' >> results.vcf
+	"""
+}
 
 def helpMessage() {
   log.info """
@@ -98,19 +112,31 @@ workflow {
     	helpMessage()
     	exit 0
 	}
-
-
 	println "$params"
-
 	parentdir=file("$params.bam").Parent
+
+	// split bam into contigs
+
 	SPLIT_BAM_TO_CHROMOSOMES("$params.bam")
 
+	// retreive bam files from results
 	split_bam_ch = Channel.fromPath("results/bams/*REF_*.bam", checkIfExists: true)
-		.map {it.baseName}.take(3)
+		.map {it.baseName}.take(12)
+
+	// run haplotype caller
+	split_vcf_ch = HAPLOTYPE_CALLER(split_bam_ch, parentdir)
+				.collect()
+
+	// gather vcf when using only one file for the header
+	header_file = split_vcf_ch.flatten().first()
+	header_file.view()
+	split_vcf_str = split_vcf_ch.map { it -> it.join(" ") }
+	GATHER_VCF(split_vcf_str, header_file)
 
 
-	HAPLOTYPE_CALLER(split_bam_ch, parentdir).collect()
-// 		.collectFile(name:'result.txt', storeDir: params.outdir)
+
+
+
 
 
 }
